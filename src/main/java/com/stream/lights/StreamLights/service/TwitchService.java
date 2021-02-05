@@ -26,10 +26,13 @@ public class TwitchService {
 	@NonNull
 	private final RestTemplate restTemplate; // TODO final here may prevent proper mocking
 
-	@Value("${twitch.host}")
+	@NonNull
+	private final TwitchAuthService twitchAuthService;
+
+	@Value("${twitch.host.api}")
 	private String twitchHost;
 
-	@Value("${twitch.subscription.url}")
+	@Value("${twitch.url.subscription.create}")
 	private String twitchSubscriptionUrl;
 
 	@Value("${twitch.client.id}")
@@ -38,15 +41,14 @@ public class TwitchService {
 	/**
 	 * Creates a new subscription to the Twitch API to listen for in-stream events
 	 * @param request CreateSubscriptionRequest request object to be added to the POST request body
-	 * @param token String token Security token to authenticate the request.
 	 * @return ResponseEntity String based response entity containing the body of the response as well as the status code.
 	 */
-	public ResponseEntity<String> subscribe(@NonNull final CreateSubscriptionRequest request, @NonNull final String token) {
+	public ResponseEntity<String> subscribe(@NonNull final CreateSubscriptionRequest request) {
 		log.info("Attempting to make POST to {}{} to create a new subscription.", twitchHost, twitchSubscriptionUrl);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(token);
+		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
 		headers.set("Client-ID", clientId);
 
 		HttpEntity<CreateSubscriptionRequest> entity = new HttpEntity<>(request, headers);

@@ -20,6 +20,6 @@ public class StreamSubscriptionController {
 
 	@PostMapping(value = "/twitch/subscription/create", produces = "application/json", consumes = "application/json")
 	public ResponseEntity<String> createSubscription(@RequestBody final CreateSubscriptionRequest request) {
-		return twitchService.subscribe(request, "token");
+		return twitchService.subscribe(request);
 	}
 }
