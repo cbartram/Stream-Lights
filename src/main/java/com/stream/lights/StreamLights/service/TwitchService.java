@@ -1,6 +1,7 @@
 package com.stream.lights.StreamLights.service;
 
-import com.stream.lights.StreamLights.model.http.twitch.CreateSubscriptionRequest;
+import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
+import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * TwitchService - Service class which wraps the Twitch Http API for creating managing subscriptions.
@@ -35,15 +39,74 @@ public class TwitchService {
 	@Value("${twitch.url.subscription.create}")
 	private String twitchSubscriptionUrl;
 
+	@Value("${twitch.url.users.login}")
+	private String twitchUserLoginEndpoint;
+
 	@Value("${twitch.client.id}")
 	private String clientId;
+
+	private final Map<String, String> usernameCache = new ConcurrentHashMap<>();
+
+	/**
+	 * Fetches a user's unique id given their Twitch username
+	 * @param username String username
+	 * @return String the users unique twitch id.
+	 */
+	public TwitchSubRequest.SubscriptionCondition fetchTwitchUserId(final String username) {
+		final SubscriptionCondition condition = new SubscriptionCondition();
+		if(usernameCache.containsKey(username)) {
+			log.info("Twitch User id cache contains key: {}", username);
+			condition.setBroadcasterUserId(usernameCache.get(username));
+			return condition;
+		}
+
+		log.info("Attempting to make GET to {}{} to fetch user id for username = {}.", twitchHost, twitchUserLoginEndpoint, username);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Client-ID", clientId);
+
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(twitchHost + twitchUserLoginEndpoint)
+				.queryParam("login", username);
+
+		HttpEntity<?> entity = new HttpEntity<>(headers);
+		HttpEntity<String> response = restTemplate.exchange(
+				builder.toUriString(),
+				HttpMethod.GET,
+				entity,
+				String.class);
+
+		log.info("Response body = {}", response.getBody());
+		usernameCache.put(username, "foo");
+		condition.setBroadcasterUserId("foo");
+		return condition;
+	}
+
+
+	/**
+	 * Lists the current subscriptions the service has created.
+	 * @return ResponseEntity String response entity containing the subscriptions currently made
+	 */
+	public ResponseEntity<String> listSubscriptions() {
+		log.info("Attempting to make GET to {}{} to list current subscription.", twitchHost, twitchSubscriptionUrl);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
+		headers.set("Client-ID", clientId);
+		HttpEntity<String> entity = new HttpEntity<>(headers);
+
+		ResponseEntity<String> response = restTemplate.exchange(twitchHost + twitchSubscriptionUrl, HttpMethod.GET, entity, String.class);
+		log.info("Response status code = {} and body = {}", response.getStatusCode(), response.getBody());
+		return response;
+	}
 
 	/**
 	 * Creates a new subscription to the Twitch API to listen for in-stream events
 	 * @param request CreateSubscriptionRequest request object to be added to the POST request body
 	 * @return ResponseEntity String based response entity containing the body of the response as well as the status code.
 	 */
-	public ResponseEntity<String> subscribe(@NonNull final CreateSubscriptionRequest request) {
+	public ResponseEntity<String> subscribe(@NonNull final TwitchSubRequest request) {
 		log.info("Attempting to make POST to {}{} to create a new subscription.", twitchHost, twitchSubscriptionUrl);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -52,7 +115,7 @@ public class TwitchService {
 		headers.set("Client-ID", clientId);
 		log.info("Create subscription object: {}", request);
 
-		HttpEntity<CreateSubscriptionRequest> entity = new HttpEntity<>(request, headers);
+		HttpEntity<TwitchSubRequest> entity = new HttpEntity<>(request, headers);
 		log.info("Create subscription request POST Body Json: {}", entity);
 
 		ResponseEntity<String> response = restTemplate.exchange(twitchHost + twitchSubscriptionUrl, HttpMethod.POST, entity, String.class);

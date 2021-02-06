@@ -13,10 +13,10 @@ import java.time.LocalDateTime;
  */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SubscriptionWebhookRequest {
+public class TwitchWebhookRequest {
 	private String challenge;
 	private WebhookSubscription subscription;
-
+	private TwitchEvent event;
 
 	@Data
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -25,8 +25,8 @@ public class SubscriptionWebhookRequest {
 		private String status;
 		private String type;
 		private String version;
-		private CreateSubscriptionRequest.SubscriptionCondition condition;
-		private CreateSubscriptionRequest.SubscriptionTransport transport;
+		private TwitchSubRequest.SubscriptionCondition condition;
+		private TwitchSubRequest.SubscriptionTransport transport;
 
 		@JsonProperty("created_at")
 		private LocalDateTime createdAt;
