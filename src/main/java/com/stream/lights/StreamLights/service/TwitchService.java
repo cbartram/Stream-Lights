@@ -17,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -76,7 +77,7 @@ public class TwitchService {
 				entity,
 				String.class);
 
-		log.info("Response body = {}", response.getBody());
+		log.info("Fetch twitch username response body = {}", response.getBody());
 		usernameCache.put(username, "foo");
 		condition.setBroadcasterUserId("foo");
 		return condition;
@@ -97,8 +98,33 @@ public class TwitchService {
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
 		ResponseEntity<String> response = restTemplate.exchange(twitchHost + twitchSubscriptionUrl, HttpMethod.GET, entity, String.class);
-		log.info("Response status code = {} and body = {}", response.getStatusCode(), response.getBody());
+		log.info("List subscription response status code = {} and body = {}", response.getStatusCode(), response.getBody());
 		return response;
+	}
+
+	/**
+	 * Deletes an existing subscription given the unique subscription id.
+	 * @param subscriptionId String the id of the subscription to delete
+	 * @return String json representing if the deletion was successful or not.
+	 */
+	public ResponseEntity<String> deleteSubscription(@NonNull final String subscriptionId) {
+		log.info("Attempting to make DELETE to {}{} to remove subscription id = {}", twitchHost, twitchSubscriptionUrl, subscriptionId);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
+		headers.set("Client-ID", clientId);
+		HttpEntity<String> entity = new HttpEntity<>(headers);
+
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(twitchHost + twitchSubscriptionUrl)
+				.queryParam("id", subscriptionId);
+
+		restTemplate.exchange(
+				builder.toUriString(),
+				HttpMethod.DELETE,
+				entity,
+				String.class);
+		return ResponseEntity.of(Optional.of("{ \"deleted\": \"" + subscriptionId + "\" }"));
 	}
 
 	/**
