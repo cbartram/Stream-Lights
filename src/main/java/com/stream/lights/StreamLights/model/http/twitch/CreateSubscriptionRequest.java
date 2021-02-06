@@ -13,6 +13,8 @@ import lombok.Data;
 public class CreateSubscriptionRequest {
 	private String type;
 	private String version;
+	private SubscriptionCondition condition;
+	private SubscriptionTransport transport;
 
 	@Data
 	@JsonIgnoreProperties(ignoreUnknown = true)

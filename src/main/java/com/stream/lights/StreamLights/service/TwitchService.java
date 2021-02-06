@@ -50,6 +50,7 @@ public class TwitchService {
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
 		headers.set("Client-ID", clientId);
+		log.info("Create subscription object: {}", request);
 
 		HttpEntity<CreateSubscriptionRequest> entity = new HttpEntity<>(request, headers);
 		log.info("Create subscription request POST Body Json: {}", entity);
