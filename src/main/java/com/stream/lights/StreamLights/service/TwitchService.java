@@ -34,13 +34,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TwitchService {
 
 	@NonNull
-	private final RestTemplate restTemplate; // TODO final here may prevent proper mocking
+	private RestTemplate restTemplate;
 
 	@NonNull
-	private final TwitchAuthService twitchAuthService;
+	private TwitchAuthService twitchAuthService;
 
 	@NonNull
-	private final ObjectMapper mapper;
+	private ObjectMapper mapper;
 
 	@Value("${twitch.host.api}")
 	private String twitchHost;

@@ -28,7 +28,7 @@ import java.util.Optional;
 public class StreamSubscriptionController {
 
 	@NonNull
-	private final TwitchService twitchService; // TODO final may prevent proper mocking
+	private TwitchService twitchService;
 
 	@PostMapping(value = "/twitch/subscription", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> createSubscription(@RequestBody final TwitchSubRequest request) {
