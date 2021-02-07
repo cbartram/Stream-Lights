@@ -27,8 +27,8 @@ public class TwitchSubRequest {
 		private String broadcasterUserId;
 
 		// Users supply this field to the API but it is NOT sent to twitch API's
-		// therefore it is READ_ONLY and will NOT be serialized when this request body is sent to twitch.
-		@JsonProperty(access = Access.READ_ONLY)
+		// therefore it is WRITE_ONLY and will NOT be serialized when this request body is sent to twitch.
+		@JsonProperty(access = Access.WRITE_ONLY)
 		private String username;
 	}
 

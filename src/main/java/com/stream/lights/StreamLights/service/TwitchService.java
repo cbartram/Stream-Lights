@@ -1,7 +1,10 @@
 package com.stream.lights.StreamLights.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
+import com.stream.lights.StreamLights.model.http.twitch.TwitchUser;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +37,9 @@ public class TwitchService {
 
 	@NonNull
 	private final TwitchAuthService twitchAuthService;
+
+	@NonNull
+	private final ObjectMapper mapper;
 
 	@Value("${twitch.host.api}")
 	private String twitchHost;
@@ -65,6 +72,7 @@ public class TwitchService {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
 		headers.set("Client-ID", clientId);
 
 		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(twitchHost + twitchUserLoginEndpoint)
@@ -78,9 +86,23 @@ public class TwitchService {
 				String.class);
 
 		log.info("Fetch twitch username response body = {}", response.getBody());
-		usernameCache.put(username, "foo");
-		condition.setBroadcasterUserId("foo");
-		return condition;
+		try {
+			Map<String, List<TwitchUser>> twitchUserMap = mapper.readValue(response.getBody(), Map.class);
+			List<TwitchUser> users = twitchUserMap.get("data");
+
+			if(!users.isEmpty()) {
+				final String userId = users.get(0).getId();
+				usernameCache.put(username, userId);
+				condition.setBroadcasterUserId(userId);
+				return condition;
+			} else {
+				log.error("Could not find Twitch user details for the username: {}", username);
+				return null;
+			}
+		} catch(JsonProcessingException e) {
+			log.error("There was an error trying to map Json string: {} to the Map.class. ", response.getBody(), e);
+			return null;
+		}
 	}
 
 

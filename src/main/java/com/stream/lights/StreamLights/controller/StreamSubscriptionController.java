@@ -32,6 +32,7 @@ public class StreamSubscriptionController {
 
 	@PostMapping(value = "/twitch/subscription", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> createSubscription(@RequestBody final TwitchSubRequest request) {
+		log.info("Subscription create request: {}", request);
 		log.info("Looking up Twitch Id for user: {}", request.getCondition().getUsername());
 		final SubscriptionCondition id = twitchService.fetchTwitchUserId(request.getCondition().getUsername());
 		log.info("Found twitch id for user: {}={}", request.getCondition().getUsername(), id);
