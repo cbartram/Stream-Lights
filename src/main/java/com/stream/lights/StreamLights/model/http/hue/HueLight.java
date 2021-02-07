@@ -16,6 +16,9 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HueLight {
 
+	// Custom property which comes from the map of the json response. This preserves the actual light id
+	// which would be lost when the list is converted from a map to a list.
+	private String lightId;
 	private State state;
 
 	@JsonProperty("swupdate")

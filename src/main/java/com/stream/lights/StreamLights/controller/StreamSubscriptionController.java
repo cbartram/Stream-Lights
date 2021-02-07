@@ -1,8 +1,10 @@
 package com.stream.lights.StreamLights.controller;
 
+import com.stream.lights.StreamLights.model.http.hue.HueLight;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
+import com.stream.lights.StreamLights.service.hue.HueService;
 import com.stream.lights.StreamLights.service.twitch.TwitchService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,6 +32,9 @@ public class StreamSubscriptionController {
 
 	@NonNull
 	private TwitchService twitchService;
+
+	@NonNull
+	private HueService hueService;
 
 	@PostMapping(value = "/twitch/subscription", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> createSubscription(@RequestBody final TwitchSubRequest request) {
@@ -59,6 +65,11 @@ public class StreamSubscriptionController {
 
 		log.info("Received new event on webhook endpoint. Event = {}", request);
 		// TODO Notify philips hue lights of the event!
+		List<HueLight> lights = hueService.getLights();
+		for(HueLight light : lights) {
+			hueService.on(light);
+		}
+
 		return ResponseEntity.of(Optional.of("success"));
 	}
 }

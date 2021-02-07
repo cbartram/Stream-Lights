@@ -26,20 +26,23 @@ import java.util.stream.Collectors;
 public class HueService {
 
 	private String lightsUrl;
+	private String lightsStateUrl;
 	private String bridgeUrl;
 	private ObjectMapper mapper;
 	private RestTemplate restTemplate;
 
 	public HueService(@Autowired RestTemplate restTemplate,
 					  @Autowired ObjectMapper mapper,
-					  @Value("${hue.url.lights}") String lights,
-					  @Value("${hue.api.key}") String apiKey) {
+					  @Value("${hue.url.lights}") String lightsUrl,
+					  @Value("${hue.api.key}") String apiKey,
+					  @Value("${hue.url.lights.state}") String lightsStateUrl
+					  ) {
 		this.restTemplate = restTemplate;
 		this.mapper = mapper;
-		this.lightsUrl = lights.replace("{api_key}", apiKey);
+		this.lightsUrl = lightsUrl.replace("{api_key}", apiKey);
+		this.lightsStateUrl = lightsStateUrl.replace("{api_key}", apiKey);
 		log.info("Using light API url: {}", this.lightsUrl);
 		this.bridgeUrl = this.getBridgeUrl();
-		this.getLights();
 	}
 
 	/**
@@ -87,12 +90,29 @@ public class HueService {
 		log.info("Hue lights response status code = {} and body = {}", response.getStatusCode(), response.getBody());
 		try {
 			Map<String, HueLight> lightsMap = this.mapper.readValue(response.getBody(), new TypeReference<>() {});
-			List<HueLight> list = lightsMap.keySet().stream().map(lightsMap::get).collect(Collectors.toList());
+			List<HueLight> list = lightsMap.keySet().stream().map(key -> {
+				HueLight l = lightsMap.get(key);
+				l.setLightId(key);
+				return l;
+			}).collect(Collectors.toList());
 			log.info("Mapped lights to list -> {}", list);
 			return list;
 		} catch (JsonProcessingException e) {
 			log.error("Failed to map Hue discovery response json to Java List.class JSON = {}", response.getBody(), e);
 			return Collections.emptyList();
 		}
+	}
+
+	public boolean on(final HueLight light) {
+		final String lightStateUrl = this.lightsStateUrl.replace("{light_id}", light.getLightId());
+		log.info("Attempting to make PUT to {}{} to change light to state ON", this.bridgeUrl, this.lightsStateUrl);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		HttpEntity<String> entity = new HttpEntity<>("{ \"on\": true }", headers);
+
+		ResponseEntity<String> response = this.restTemplate.exchange(this.bridgeUrl + lightStateUrl, HttpMethod.PUT, entity, String.class);
+		log.info("Hue lights ON response status code = {} and body = {}", response.getStatusCode(), response.getBody());
+		return true;
 	}
 }
