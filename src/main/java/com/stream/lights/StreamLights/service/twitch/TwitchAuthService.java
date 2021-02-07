@@ -1,4 +1,4 @@
-package com.stream.lights.StreamLights.service;
+package com.stream.lights.StreamLights.service.twitch;
 
 
 import com.google.common.base.Suppliers;

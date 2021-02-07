@@ -1,4 +1,4 @@
-package com.stream.lights.StreamLights.service;
+package com.stream.lights.StreamLights.service.twitch;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

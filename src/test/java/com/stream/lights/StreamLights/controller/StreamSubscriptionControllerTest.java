@@ -2,8 +2,8 @@ package com.stream.lights.StreamLights.controller;
 
 import com.stream.lights.StreamLights.TestUtils;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
-import com.stream.lights.StreamLights.service.TwitchAuthService;
-import com.stream.lights.StreamLights.service.TwitchService;
+import com.stream.lights.StreamLights.service.twitch.TwitchAuthService;
+import com.stream.lights.StreamLights.service.twitch.TwitchService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

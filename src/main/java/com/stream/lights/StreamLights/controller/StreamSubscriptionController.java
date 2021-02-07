@@ -3,7 +3,7 @@ package com.stream.lights.StreamLights.controller;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
-import com.stream.lights.StreamLights.service.TwitchService;
+import com.stream.lights.StreamLights.service.twitch.TwitchService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
