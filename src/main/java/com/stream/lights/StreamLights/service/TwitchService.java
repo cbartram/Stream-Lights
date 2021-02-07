@@ -1,6 +1,7 @@
 package com.stream.lights.StreamLights.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
@@ -87,9 +88,9 @@ public class TwitchService {
 
 		log.info("Fetch twitch username response body = {}", response.getBody());
 		try {
-			Map<String, List<TwitchUser>> twitchUserMap = mapper.readValue(response.getBody(), Map.class);
-			List<TwitchUser> users = twitchUserMap.get("data");
-
+			Map<String, List<TwitchUser>> node = mapper.readValue(response.getBody(), new TypeReference<>() {});
+			List<TwitchUser> users = node.get("data");
+			log.info("Found: {} user(s)", users.size());
 			if(!users.isEmpty()) {
 				final String userId = users.get(0).getId();
 				usernameCache.put(username, userId);
