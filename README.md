@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="https://i.imgur.com/bADycH9.png" alt="lightbulb logo" />
+</p>
+
 # Stream Lights
 
 This is a java based software package which can trigger Philips Hue lights when an event occurs on your Twitch stream.
