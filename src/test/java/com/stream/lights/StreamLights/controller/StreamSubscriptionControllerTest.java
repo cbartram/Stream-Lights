@@ -1,8 +1,10 @@
 package com.stream.lights.StreamLights.controller;
 
 import com.stream.lights.StreamLights.TestUtils;
+import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
 import com.stream.lights.StreamLights.service.TwitchAuthService;
 import com.stream.lights.StreamLights.service.TwitchService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -15,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@Slf4j
 @SpringBootTest
 class StreamSubscriptionControllerTest {
 
@@ -36,6 +39,51 @@ class StreamSubscriptionControllerTest {
 		ResponseEntity<String> response = controller.createSubscription(TestUtils.initTwitchSubRequest());
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertEquals(TestUtils.TWITCH_SUBSCRIPTION_SUCCESS_JSON_RESPONSE, response.getBody());
+	}
+
+
+	@Test
+	void streamSubscriptionController_listSubscriptions_success() {
+		MockitoAnnotations.openMocks(this);
+		when(twitchService.listSubscriptions()).thenReturn(ResponseEntity.ok(TestUtils.TWITCH_LIST_SUBSCRIPTION_JSON_RESPONSE));
+
+		ResponseEntity<String> response = controller.listSubscriptions();
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals(TestUtils.TWITCH_LIST_SUBSCRIPTION_JSON_RESPONSE, response.getBody());
+	}
+
+
+	@Test
+	void streamSubscriptionController_deleteSubscription_success() {
+		MockitoAnnotations.openMocks(this);
+		when(twitchService.deleteSubscription(any())).thenReturn(ResponseEntity.ok("{ \"deleted\": \"id\" }"));
+
+		ResponseEntity<String> response = controller.deleteSubscription("id");
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals("{ \"deleted\": \"id\" }", response.getBody());
+	}
+
+
+	@Test
+	void streamSubscriptionController_webhookCallback_verifyChallenge_success() {
+		MockitoAnnotations.openMocks(this);
+
+		ResponseEntity<String> response = controller.webhook(TestUtils.initTwitchWebhookRequest());
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals("challenge_id", response.getBody());
+	}
+
+
+	@Test
+	void streamSubscriptionController_webhookCallback_standardEvent_success() {
+		MockitoAnnotations.openMocks(this);
+		final TwitchWebhookRequest subscription = TestUtils.initTwitchWebhookRequest();
+		subscription.setChallenge(null);
+		subscription.setEvent(TestUtils.initTwitchEvent());
+
+		ResponseEntity<String> response = controller.webhook(subscription);
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals("success", response.getBody());
 	}
 
 }
