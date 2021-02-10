@@ -118,6 +118,92 @@ curl -X GET http://localhost:8080/actuator/health
 
 If you used `ngrok` then make sure to check your `ngrok` Forwarding URL with the `curl` command!
 
+## Creating a Subscription
+
+You can create a subscription through the `ngrok` endpoint or your `localhost`. Creating a subscription will let you hook into
+many different types of Twitch events to trigger your Philips hue lights.
+
+Please reference the [Twitch Documentation](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types) for a list of viable events to which 
+you can subscribe.
+
+Creating a subscription can be done with the following Curl request:
+
+```shell
+curl --location --request POST 'http://localhost:8080/twitch/subscription' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "type": "channel.follow",
+    "condition": {
+        "username": "runewraith_"
+    },
+    "transport": {
+        "callback": "https://5c679b7.ngrok.io/twitch/subscription/webhook"
+    }
+}'
+```
+
+Take note that this request is essentially saying "Notify my Philips hue lights anytime the user: runewraith_ on Twitch get a new follower to his/her channel."
+Your transport callback **must use HTTPS** therefore it should be set to your `ngrok` forwarding URL. 
+
+Some other common events you may want to subscribe to include: 
+
+- `channel.subscribe`
+- `channel.cheer`
+- `channel.hype_train.begin`
+- `channel.hype_train.progress`
+- `channel.hype_train.end`
+- `stream.online`
+
+## Listing Subscriptions
+
+You can list all your current subscriptions with the following curl: 
+
+```shell
+curl --location --request GET 'http://localhost:8080/twitch/subscription' \
+--header 'Content-Type: application/json'
+```
+
+It will return a response which looks like the following:
+
+```json
+{
+    "total": 1,
+    "data": [
+        {
+            "id": "9e5d41-269-402-a96-afacde85b",
+            "status": "enabled",
+            "type": "channel.follow",
+            "version": "1",
+            "condition": {
+                "broadcaster_user_id": "123456"
+            },
+            "created_at": "2021-02-07T17:38:20.799440479Z",
+            "transport": {
+                "method": "webhook",
+                "callback": "https://5c6759b7.ngrok.io/twitch/subscription/webhook"
+            }
+        }
+    ],
+    "limit": 10000,
+    "pagination": {}
+}
+```
+
+## Removing an existing Subscription
+
+You can remove an existing subscription as long as you have the subscription id. The subscription id is a long string 
+which will look something like this: `"9e5d41-269-402-a96-afacde85b"`. Your subscription id is returned in the response
+when you create a new subscription.
+
+The following curl will delete a subscription ID called `<SUBSCRIPTION_ID_HERE>`
+
+```shell
+curl --location --request DELETE 'http://localhost:8080/twitch/subscription/<SUBSCRIPTION_ID_HERE>' \
+--header 'Content-Type: application/json'
+```
+
+The response will not contain a body but will have a 200 status code.
+
 ## Running the tests
 
 Tests are written and run with JUnit and Mockito. To run the tests simply use [Maven](https://maven.apache.org):

@@ -3,6 +3,7 @@ package com.stream.lights.StreamLights.model.http.twitch;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
+import com.stream.lights.StreamLights.util.Util;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TwitchSubRequest {
 	private String type;
-	private String version;
+	private String version = "1";
 	private SubscriptionCondition condition;
 	private SubscriptionTransport transport;
 
@@ -35,8 +36,8 @@ public class TwitchSubRequest {
 	@Data
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class SubscriptionTransport {
-		private String method;
+		private String method = "webhook";
 		private String callback;
-		private String secret;
+		private String secret = Util.randomString(12);
 	}
 }
