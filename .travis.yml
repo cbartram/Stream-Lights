@@ -1,0 +1,22 @@
+language: java
+jdk:
+- oraclejdk11
+- openjdk11
+
+addons:
+  sonarcloud:
+    organization: cbartram-github
+
+deploy:
+  provider: releases
+  token:
+    secure: NjAWs+g745yRXZ2xcPysSujT7IvaLzP4BD8dowtMwJuDhkyooj+hMz4GDVsAtqgjbcdjdDAmJDc07kSKyNZ8AxvTuzxt0Lwom6jktkY7HSDa51fqyVNp+WAi5J1CSPbAyaI5RdITQ4x3+a28KkRnW1F+y2bOXS9fAY0eo7H54D6BefPAGv75gPdyC/mN4ZWEPePBJIpABjJXaEthaF9RN+WIfr6xrIwZ/NCWMt9voWgDpY+j58aRDohD4frV7YKuxR2LsJ0bzgWfy+aWDORaQfZvsrf0J1AUbRLrCMzG/2I0FhzPc+o1G8jVoHvYIm1VEsxBigN0pVZ2XweGiharhxj9t3Pw77ewdVzjCE56ZPhZK5sPHOK+WzyfrHQva6NdEIRVRANnZSBwrsnNZlEwpGF0qy77oBKoqXjnb0wrmB8KVTYsHw2Zdm1SjT/fEMfnz/S3+GttpY13ZVREYdqA9IlxBM6QEOa04IK4HXIRU4wZSbui78CGrBq+ag6ZkhHEPE8gsw0Bgg5ilzGmOQi2JSANUWrVsLUkI5BCvYwti4OsK03PtIlVi/+83FxxeUbwfQb/GKfjZGZGUMEw1n6h8lW7sfXQgJZNzXFKd6I9ySwScaksu10m8MeEIefvd7BwQXQQuWEheZoOMBVrWxsbAyWeOIpUH6hR84UKdIbbk5c=
+  repo: Stream-Lights
+  name: Stream-Lights
+  file: "./target/*.jar"
+  edge: true
+  on:
+    tags: true
+
+notifications:
+  email: false
