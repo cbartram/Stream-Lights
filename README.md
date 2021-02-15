@@ -118,7 +118,7 @@ curl -X GET http://localhost:8080/actuator/health
 
 If you used `ngrok` then make sure to check your `ngrok` Forwarding URL with the `curl` command!
 
-## Creating a Subscription
+### Creating a Subscription
 
 You can create a subscription through the `ngrok` endpoint or your `localhost`. Creating a subscription will let you hook into
 many different types of Twitch events to trigger your Philips hue lights.
@@ -154,7 +154,7 @@ Some other common events you may want to subscribe to include:
 - `channel.hype_train.end`
 - `stream.online`
 
-## Listing Subscriptions
+### Listing Subscriptions
 
 You can list all your current subscriptions with the following curl: 
 
@@ -189,7 +189,7 @@ It will return a response which looks like the following:
 }
 ```
 
-## Removing an existing Subscription
+### Removing an existing Subscription
 
 You can remove an existing subscription as long as you have the subscription id. The subscription id is a long string 
 which will look something like this: `"9e5d41-269-402-a96-afacde85b"`. Your subscription id is returned in the response

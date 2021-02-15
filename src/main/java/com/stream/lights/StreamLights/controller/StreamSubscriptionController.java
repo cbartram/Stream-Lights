@@ -67,7 +67,7 @@ public class StreamSubscriptionController {
 		// TODO Notify philips hue lights of the event!
 		List<HueLight> lights = hueService.getLights();
 		for(HueLight light : lights) {
-			hueService.on(light);
+			light.on();
 		}
 
 		return ResponseEntity.of(Optional.of("success"));
