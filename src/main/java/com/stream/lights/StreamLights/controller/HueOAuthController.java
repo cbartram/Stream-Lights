@@ -2,6 +2,7 @@ package com.stream.lights.StreamLights.controller;
 
 
 import com.stream.lights.StreamLights.service.hue.HueAuthService;
+import com.stream.lights.StreamLights.service.hue.HueService;
 import com.stream.lights.StreamLights.util.Util;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -27,11 +28,24 @@ public class HueOAuthController {
 	@NonNull
 	private HueAuthService hueAuthService;
 
+	@NonNull
+	private HueService hueService;
+
 	@GetMapping("/oauth2/callback")
 	private String oauthCallback(@RequestParam final String code, @RequestParam(required = false) final String state) {
 		log.info("Got access code: {} for state: {}", code, state);
-		final String token = hueAuthService.getAppAccessToken(code);
-		log.info("Got the token: {}", token);
+
+		// 1.) Press virtual "link button" on users hue bridge
+		//	https://api.meethue.com/bridge/0/config PUT { “linkbutton”:true }
+
+		// 2.) Create a new user on their bridge
+		// https://api.meethue.com/bridge/ POST { “devicetype”:”<your-application-name>” }
+
+		final String createdUsername = hueService.linkBridge(code);
+
+		// 3.) Good to make API calls
+		//  GET https://api.meethue.com/bridge/<whitelist_identifier>/lights
+
 		return "success";
 	}
 
