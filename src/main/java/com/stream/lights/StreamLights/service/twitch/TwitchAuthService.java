@@ -27,7 +27,7 @@ public class TwitchAuthService {
 	@Value("${twitch.host.validation}")
 	private String twitchHost;
 
-	@Value("${twitch.url.oauth.token}")
+	@Value("${oauth.token.url}")
 	private String accessTokenEndpoint;
 
 	@Value("${twitch.client.id}")

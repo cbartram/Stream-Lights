@@ -23,7 +23,7 @@ public class HueAuthService {
 	@Value("${hue.host}")
 	private String hueHost;
 
-	@Value("${hue.oauth.token.url}")
+	@Value("${oauth.token.url}")
 	private String accessTokenEndpoint;
 
 	@Value("${hue.client.id}")

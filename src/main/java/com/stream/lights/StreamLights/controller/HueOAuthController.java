@@ -34,9 +34,11 @@ public class HueOAuthController {
 		// Presses the virtual "link button" on users hue bridge and
 		// creates a new user on their bridge
 		final String createdUsername = hueService.linkBridge(code);
+		log.info("Successfully Created Api Key: {} for the remote Hue bridge.", createdUsername);
+
 
 		// TODO Good to make API calls
-		//  GET https://api.meethue.com/bridge/<whitelist_identifier>/lights
+		//  GET https://api.meethue.com/bridge/<API_KEY>/lights
 
 		return "success";
 	}

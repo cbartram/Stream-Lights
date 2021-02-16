@@ -20,7 +20,7 @@ public class HueLinkResponse {
 	 * map. The username should be the only field present within the map
 	 * @return String the Hue bridge username for making API calls to a remote hue bridge.
 	 */
-	public String getUsername() {
+	public String getApiKey() {
 		if(success != null) {
 			return success.get("username");
 		} else {

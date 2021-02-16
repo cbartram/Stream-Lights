@@ -40,7 +40,6 @@ public class HueService {
 					  @Autowired ObjectMapper mapper,
 					  @Value("${hue.url.lights}") String lightsUrl,
 					  @Value("${hue.host}") String hueHost,
-					  @Value("${hue.url.bridge}") String bridgeUrl,
 					  @Value("${hue.url.bridge.config}") String bridgeConfigUrl,
 					  @Value("${hue.api.key}") String apiKey,
 					  @Value("${hue.url.lights.state}") String lightsStateUrl
@@ -50,7 +49,6 @@ public class HueService {
 		this.lightsUrl = lightsUrl.replace("{api_key}", apiKey);
 		this.lightsStateUrl = lightsStateUrl.replace("{api_key}", apiKey);
 		this.hueHost = hueHost;
-		this.bridgeUrl = bridgeUrl;
 		this.bridgeConfigUrl = bridgeConfigUrl;
 		this.hueAuthService = hueAuthService;
 	}
@@ -60,24 +58,24 @@ public class HueService {
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setBearerAuth(hueAuthService.getAppAccessToken(authorizationCode));
 		HttpEntity<String> entity = new HttpEntity<>("{\"linkbutton\": true}", headers);
-		ResponseEntity<String> response = restTemplate.exchange(hueHost + bridgeUrl + bridgeConfigUrl, HttpMethod.PUT, entity, String.class);
-
+		ResponseEntity<String> response = restTemplate.exchange(hueHost + bridgeConfigUrl, HttpMethod.PUT, entity, String.class);
+		log.debug("Response from remote bridge linking API call to {} is {}", hueHost + bridgeConfigUrl, response);
 		if(response.getStatusCode().is2xxSuccessful()) {
+			log.info("Successfully linked with remote Hue Bridge. Attempting to create new Api Key to remote bridge.");
 			// Now that we have pressed the virtual "link" button on the users bridge we need to quickly create a username.
-			HttpEntity<String> createUsernameRequestBody = new HttpEntity<>("{\"devicetype\":\"stream-lights\"}", headers);
-			ResponseEntity<String> createUsernameResponse = restTemplate.exchange(hueHost + bridgeUrl, HttpMethod.POST, createUsernameRequestBody, String.class);
+			HttpEntity<String> createApiKeyRequestBody = new HttpEntity<>("{\"devicetype\":\"stream-lights\"}", headers);
+			ResponseEntity<String> createApiKeyResponse = restTemplate.exchange(hueHost + bridgeUrl, HttpMethod.POST, createApiKeyRequestBody, String.class);
 			try {
-				List<HueLinkResponse> createdUsernames = mapper.readValue(createUsernameResponse.getBody(), new TypeReference<>() {});
-				log.info("Create username response: {}", createUsernameResponse);
-				log.info("Successfully Created username: {}", createdUsernames.get(0).getUsername());
-				return createdUsernames.get(0).getUsername();
+				List<HueLinkResponse> createdKeys = mapper.readValue(createApiKeyResponse.getBody(), new TypeReference<>() {});
+				log.debug("Create remote bridge Api key response: {}", createApiKeyResponse);
+				return createdKeys.get(0).getApiKey();
 			} catch(JsonProcessingException e) {
 				log.error("Failed to map json response from hue link API call back to list of HueLinkResponse objects. ", e);
-				return "error";
+				return null;
 			}
 		} else {
 			log.error("Error creating remote link to Hue Bridge. Cannot PUT to: {}, Response Body = {}", hueHost + bridgeUrl + bridgeConfigUrl, response.getBody());
-			return "error";
+			return null;
 		}
 	}
 
