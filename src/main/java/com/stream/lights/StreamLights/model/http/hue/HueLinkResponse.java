@@ -15,6 +15,11 @@ import java.util.Map;
 public class HueLinkResponse {
 	private Map<String, String> success;
 
+	/**
+	 * Convenience method to return the username field from the
+	 * map. The username should be the only field present within the map
+	 * @return String the Hue bridge username for making API calls to a remote hue bridge.
+	 */
 	public String getUsername() {
 		if(success != null) {
 			return success.get("username");

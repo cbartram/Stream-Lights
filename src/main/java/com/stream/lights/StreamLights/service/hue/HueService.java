@@ -82,36 +82,6 @@ public class HueService {
 	}
 
 	/**
-	 * Uses the philips hue discovery service to fetch the bridge URL for the hue bridge on the local network.
-	 * This is used to make future API calls to the hue bridge.
-	 * @return String the full URL to the philips hue bridge on the network if it is found. Returns "unknown" if there
-	 * is no bridge or it cannot be located.
-	 */
-	public String getBridgeUrl() {
-		log.info("Attempting to make GET to https://discovery.meethue.com/ to find hue bridge URL.");
-		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<String> entity = new HttpEntity<>(headers);
-
-		ResponseEntity<String> response = this.restTemplate.exchange("https://discovery.meethue.com/", HttpMethod.GET, entity, String.class);
-		log.info("Hue Discovery service response status code = {} and body = {}", response.getStatusCode(), response.getBody());
-		try {
-			List<Map<String, String>> discoveredBridges = this.mapper.readValue(response.getBody(), new TypeReference<>() {});
-			if(!discoveredBridges.isEmpty()) {
-				log.info("Found: {} Hue bridges. Setting Hue bridge URL to: http://{}", discoveredBridges.size(), discoveredBridges.get(0).get("internalipaddress"));
-				return "http://" + discoveredBridges.get(0).get("internalipaddress");
-			} else {
-				log.warn("No philips hue bridges detected on the local network. Make sure it is plugged in and connected to the same Wifi network as this server.");
-				return "unknown";
-			}
-		} catch (JsonProcessingException e) {
-			log.error("Failed to map Hue discovery response json to Java List.class JSON = {}", response.getBody(), e);
-			return "unknown";
-		}
-	}
-
-	/**
 	 * Returns a list of Light objects representing all the Philips hue lights found on the network.
 	 * @return List of Light objects.
 	 */

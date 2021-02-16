@@ -14,8 +14,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -58,10 +56,6 @@ public class HueAuthService {
 	 */
 	private void fetchOAuthToken(final String authorizationCode) {
 		log.info("Attempting to make POST to {}{} to create fetch new application OAuth 2.0 Token.", hueHost, accessTokenEndpoint);
-		Map<String, String> params = new HashMap<>();
-		params.put("code", authorizationCode);
-		params.put("grant_type", "authorization_code");
-
 		HttpHeaders headers = new HttpHeaders();
 		headers.setBasicAuth(clientId, clientSecret);
 
