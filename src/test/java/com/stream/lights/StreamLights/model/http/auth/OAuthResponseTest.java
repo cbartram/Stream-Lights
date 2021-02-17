@@ -17,7 +17,7 @@ class OAuthResponseTest {
 		response.setScope(Collections.emptyList());
 		response.setTokenType("type");
 
-		assertEquals("token", response.getAccessToken());
+		assertEquals("token", response.getToken());
 		assertEquals(1, response.getExpiresIn());
 		assertEquals("refresh", response.getRefreshToken());
 		assertEquals(Collections.emptyList(), response.getScope());

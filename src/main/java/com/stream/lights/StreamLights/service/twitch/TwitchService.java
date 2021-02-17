@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchUser;
+import com.stream.lights.StreamLights.service.auth.OAuthService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,10 +38,10 @@ public class TwitchService {
 	private RestTemplate restTemplate;
 
 	@NonNull
-	private TwitchAuthService twitchAuthService;
+	private ObjectMapper mapper;
 
 	@NonNull
-	private ObjectMapper mapper;
+	private OAuthService oAuthService;
 
 	@Value("${twitch.host.api}")
 	private String twitchHost;
@@ -73,7 +74,7 @@ public class TwitchService {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
+		headers.setBearerAuth(oAuthService.fetchTwitchAccessToken().getToken());
 		headers.set("Client-ID", clientId);
 
 		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(twitchHost + twitchUserLoginEndpoint)
@@ -116,7 +117,7 @@ public class TwitchService {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
+		headers.setBearerAuth(oAuthService.fetchTwitchAccessToken().getToken());
 		headers.set("Client-ID", clientId);
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -135,7 +136,7 @@ public class TwitchService {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
+		headers.setBearerAuth(oAuthService.fetchTwitchAccessToken().getToken());
 		headers.set("Client-ID", clientId);
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -160,7 +161,7 @@ public class TwitchService {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(twitchAuthService.getAppAccessToken());
+		headers.setBearerAuth(oAuthService.fetchTwitchAccessToken().getToken());
 		headers.set("Client-ID", clientId);
 		log.info("Create subscription object: {}", request);
 

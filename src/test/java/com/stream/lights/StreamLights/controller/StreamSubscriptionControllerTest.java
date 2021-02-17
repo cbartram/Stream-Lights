@@ -2,7 +2,6 @@ package com.stream.lights.StreamLights.controller;
 
 import com.stream.lights.StreamLights.TestUtils;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
-import com.stream.lights.StreamLights.service.twitch.TwitchAuthService;
 import com.stream.lights.StreamLights.service.twitch.TwitchService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -26,9 +25,6 @@ class StreamSubscriptionControllerTest {
 
 	@Mock
 	private TwitchService twitchService;
-
-	@Mock
-	private TwitchAuthService authService;
 
 	@Test
 	void streamSubscriptionController_createSubscription_success() {

@@ -2,7 +2,9 @@ package com.stream.lights.StreamLights.model.http.auth;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
 
 import java.util.List;
 
@@ -14,6 +16,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OAuthResponse {
 
+	@Getter(AccessLevel.NONE)
 	@JsonProperty("access_token")
 	private String accessToken;
 
@@ -27,4 +30,8 @@ public class OAuthResponse {
 
 	@JsonProperty("token_type")
 	private String tokenType;
+
+	public String getToken() {
+		return this.accessToken;
+	}
 }

@@ -24,4 +24,20 @@ public class Util {
 		}
 		return String.valueOf(salt);
 	}
+
+	/**
+	 * Masks a sensitive value in the logs with asterisks.
+	 * @param string String the value to mask
+	 * @param numCharsRevealed int The number of characters to reveal in the string.
+	 * @return String a masked version of the string. I.e snake, 3 => sna**
+	 */
+	public static String mask(final String string, final int numCharsRevealed) {
+		if(numCharsRevealed < 0 || numCharsRevealed > string.length()) {
+			return "*".repeat(string.length());
+		}
+
+		String subString = string.substring(0, numCharsRevealed);
+		subString += "*".repeat(string.length() - subString.length());
+		return subString;
+	}
 }
