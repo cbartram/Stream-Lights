@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,12 +88,13 @@ public class StreamSubscriptionController {
 			for (HueLight light : lights) {
 				hueService.on(light.getLightId(), bridge);
 			}
-		} catch(AccessDeniedException e) {
+		} catch(Exception e) {
 			log.warn("OAuth token is expired. Attempting to fetch new token.");
 			OAuthResponse newToken = oAuthService.refreshHueAccessToken(bridge.getRefreshToken());
 			bridge.setAccessToken(newToken.getToken());
 			bridge.setRefreshToken(newToken.getRefreshToken());
 			table.updateItem(bridge);
+			log.info("OAuth token expired. Token has been refreshed. Please retry operation.");
 			return ResponseEntity.of(Optional.of("oauth token expired. Token has been refreshed. Retry operation."));
 		}
 
