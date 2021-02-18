@@ -1,8 +1,12 @@
 package com.stream.lights.StreamLights.controller;
 
+import com.stream.lights.StreamLights.model.dynamodb.HueBridge;
+import com.stream.lights.StreamLights.model.http.auth.OAuthResponse;
+import com.stream.lights.StreamLights.model.http.hue.HueLight;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
+import com.stream.lights.StreamLights.service.auth.OAuthService;
 import com.stream.lights.StreamLights.service.hue.HueService;
 import com.stream.lights.StreamLights.service.twitch.TwitchService;
 import lombok.NonNull;
@@ -16,7 +20,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,6 +40,12 @@ public class StreamSubscriptionController {
 
 	@NonNull
 	private HueService hueService;
+
+	@NonNull
+	private DynamoDbTable<HueBridge> table;
+
+	@NonNull
+	private OAuthService oAuthService;
 
 	@PostMapping(value = "/twitch/subscription", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> createSubscription(@RequestBody final TwitchSubRequest request) {
@@ -62,11 +75,24 @@ public class StreamSubscriptionController {
 		}
 
 		log.info("Received new event on webhook endpoint. Event = {}", request);
-		// TODO Notify philips hue lights of the event!
-//		List<HueLight> lights = hueService.getLights();
-//		for(HueLight light : lights) {
-//			hueService.on(light.getLightId(), );
-//		}
+		log.info("Finding Hue information for user: {}", request.getEvent().getUsername());
+		HueBridge bridge = table.getItem(Key.builder()
+				.partitionValue(request.getEvent().getBroadcasterUsername().toLowerCase())
+				.sortValue("#sort_id")
+				.build());
+
+		log.info("Found bridge information: {}", bridge);
+		OAuthResponse newToken = oAuthService.refreshHueAccessToken(bridge.getRefreshToken());
+		log.info("New OAuth token and refresh token: {}", newToken);
+
+		// Update database with the new refresh token
+		bridge.setRefreshToken(newToken.getRefreshToken());
+		table.updateItem(bridge);
+
+		List<HueLight> lights = hueService.getLights(bridge.getHueApiKey(), newToken.getToken());
+		for(HueLight light : lights) {
+			hueService.on(light.getLightId(), bridge.getHueApiKey(), newToken.getToken());
+		}
 
 		return ResponseEntity.of(Optional.of("success"));
 	}

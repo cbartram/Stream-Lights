@@ -7,4 +7,5 @@ package com.stream.lights.StreamLights.service.auth;
 public enum GrantType {
 	CLIENT_CREDENTIALS,
 	AUTHORIZATION_CODE,
+	REFRESH_TOKEN
 }

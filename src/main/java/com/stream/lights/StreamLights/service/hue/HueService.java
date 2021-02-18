@@ -4,6 +4,8 @@ package com.stream.lights.StreamLights.service.hue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stream.lights.StreamLights.model.dynamodb.HueBridge;
+import com.stream.lights.StreamLights.model.http.auth.OAuthResponse;
 import com.stream.lights.StreamLights.model.http.hue.HueLight;
 import com.stream.lights.StreamLights.model.http.hue.HueLinkResponse;
 import com.stream.lights.StreamLights.service.auth.OAuthService;
@@ -65,14 +67,14 @@ public class HueService {
 	 *                          to gather their personal information on the hue bridge.
 	 * @return String the Api key used in subsequent requests to the bridge.
 	 */
-	public String linkBridge(final String authorizationCode) {
+	public HueBridge linkBridge(final String authorizationCode) {
+		OAuthResponse oauthToken = this.oauthService.fetchHueAccessToken(authorizationCode);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(this.oauthService.fetchHueAccessToken(authorizationCode).getToken());
+		headers.setBearerAuth(oauthToken.getToken());
 		HttpEntity<String> entity = new HttpEntity<>("{\"linkbutton\": true}", headers);
 		ResponseEntity<String> response = restTemplate.exchange(this.hueHost + bridgeConfigUrl, HttpMethod.PUT, entity, String.class);
-		log.info("Response from remote bridge linking API call to {} is {}", this.hueHost + bridgeConfigUrl, response); // TODO change to debug when done if this contains useful information about the bridge we could use this
-		// TODO as a cache key
+		log.debug("Response from remote bridge linking API call to {} is {}", this.hueHost + bridgeConfigUrl, response);
 		if(response.getStatusCode().is2xxSuccessful()) {
 			log.info("Successfully linked with remote Hue Bridge. Attempting to create new Api Key with remote bridge.");
 			// Now that we have pressed the virtual "link" button on the users bridge we need to quickly create a new API key.
@@ -87,7 +89,10 @@ public class HueService {
 			if(createApiKeyResponse.getStatusCode().is2xxSuccessful()) {
 				try {
 					List<HueLinkResponse> createdKeys = mapper.readValue(createApiKeyResponse.getBody(), new TypeReference<>() {});
-					return createdKeys.get(0).getApiKey();
+					HueBridge bridge = new HueBridge();
+					bridge.setRefreshToken(oauthToken.getRefreshToken());
+					bridge.setHueApiKey(createdKeys.get(0).getApiKey());
+					return bridge;
 				} catch (JsonProcessingException e) {
 					log.error("Failed to map json response from hue link API call back to list of HueLinkResponse objects. ", e);
 					return null;
@@ -105,12 +110,13 @@ public class HueService {
 	 * Each light object can be individually controlled.
 	 * @return List of Light objects.
 	 */
-	public List<HueLight> getLights(final String apiKey) {
+	public List<HueLight> getLights(final String apiKey, final String accessToken) {
 		final String getLightsEndpoint = this.lightsUrl.replace("{api_key}", apiKey);
 		log.info("Attempting to make GET to {}{} to find Hue lights on the network.", this.hueHost, getLightsEndpoint);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(accessToken);
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
 		ResponseEntity<String> response = this.restTemplate.exchange(this.hueHost + getLightsEndpoint, HttpMethod.GET, entity, String.class);
@@ -141,8 +147,8 @@ public class HueService {
 	 * @param lightId String light id of the light to change the state for
 	 * @param apiKey String the API key to authenticate with the correct Hue remote bridge
 	 */
-	public void on(final String lightId, final String apiKey) {
-		putState(lightId, apiKey, "{ \"on\": true }");
+	public void on(final String lightId, final String apiKey, final String accessToken) {
+		putState(lightId, apiKey, "{ \"on\": true }", accessToken);
 	}
 
 	/**
@@ -150,8 +156,8 @@ public class HueService {
 	 * @param lightId String light id of the light to change the state for
 	 * @param apiKey String the API key to authenticate with the correct Hue remote bridge
 	 */
-	public void off(final String lightId, final String apiKey) {
-		this.putState(lightId, apiKey, "{ \"on\": false }");
+	public void off(final String lightId, final String apiKey, final String accessToken) {
+		this.putState(lightId, apiKey, "{ \"on\": false }", accessToken);
 	}
 
 	/**
@@ -160,15 +166,15 @@ public class HueService {
 	 * @param apiKey String the API key to authenticate with the correct Hue remote bridge
 	 * @param state String the new JSON state to PUT for the light.
 	 */
-	private void putState(final String lightId, final String apiKey, final String state) {
+	private void putState(final String lightId, final String apiKey, final String state, final String accessToken) {
 		final String lightStateEndpoint = this.lightsStateUrl
 				.replace("{api_key}", apiKey)
 				.replace("{light_id}", lightId);
 
 		log.info("Attempting to make PUT to {} to change light to state ON", this.hueHost + lightStateEndpoint);
 		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(accessToken);
 		HttpEntity<String> entity = new HttpEntity<>(state, headers);
 		ResponseEntity<String> response = this.restTemplate.exchange(this.hueHost + lightStateEndpoint, HttpMethod.PUT, entity, String.class);
 		log.debug("Hue lights put state status code = {} and body = {}", response.getStatusCode(), response.getBody());

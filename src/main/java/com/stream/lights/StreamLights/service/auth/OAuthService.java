@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -56,7 +59,7 @@ public class OAuthService {
 			return cache.get(key);
 		}
 
-		return fetchAccessToken(twitchHost, twitchClientId, "null", GrantType.CLIENT_CREDENTIALS, OAuthProvider.TWITCH, null);
+		return fetchAccessToken(twitchHost, twitchClientId, "null", GrantType.CLIENT_CREDENTIALS, OAuthProvider.TWITCH, null, null);
 	}
 
 	/**
@@ -71,7 +74,17 @@ public class OAuthService {
 			return cache.get(key);
 		}
 
-		return fetchAccessToken(hueHost, hueClientId, hueClientSecret, GrantType.AUTHORIZATION_CODE, OAuthProvider.PHILLIPS_HUE, authorizationCode);
+		return fetchAccessToken(hueHost, hueClientId, hueClientSecret, GrantType.AUTHORIZATION_CODE, OAuthProvider.PHILLIPS_HUE, authorizationCode, null);
+	}
+
+	public OAuthResponse refreshHueAccessToken(final String refreshToken) {
+		final String key = "PHILLIPS_HUE.<user_id>";
+		if(cache.containsKey(key) && lastCallTime.plusSeconds(cache.get(key).getExpiresIn()).isBefore(LocalDateTime.now())) {
+			log.info("Cache hit for Phillips Hue OAuth access_token: {} on key = {}", Util.mask(cache.get(key).getToken(), 6), key);
+			return cache.get(key);
+		}
+
+		return fetchAccessToken(hueHost, hueClientId, hueClientSecret, GrantType.REFRESH_TOKEN, OAuthProvider.PHILLIPS_HUE, null, refreshToken);
 	}
 
 
@@ -87,21 +100,32 @@ public class OAuthService {
 	 *                          be null in a client credentials grant type scenario.
 	 * @return OAuthResponse Object which contains meta-data about an OAuth token as well as the access_token itself.
 	 */
-	private OAuthResponse fetchAccessToken(final String host, final String clientId, String clientSecret, final GrantType grantType, final OAuthProvider provider, String authorizationCode) {
+	private OAuthResponse fetchAccessToken(final String host, final String clientId, String clientSecret, final GrantType grantType, final OAuthProvider provider, String authorizationCode, String refreshToken) {
 		log.info("Attempting to make POST to {}/oauth2/token to fetch new OAuth 2.0 Token using {} grant type", host, grantType);
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(host + "/oauth2/token");
+		UriComponentsBuilder builder;
 		HttpHeaders headers = new HttpHeaders();
 		// TODO Might break with twitch authentication idk yet twitch auth doesnt need basic auth header but philips
 		// Yikes also shouldn't put client secret in basic auth.
+		HttpEntity<?> entity;
 		headers.setBasicAuth(clientId, clientSecret);
-		HttpEntity<?> entity = new HttpEntity<>(headers);
 		if(grantType == GrantType.AUTHORIZATION_CODE) {
+			builder = UriComponentsBuilder.fromHttpUrl(host + "/oauth2/token");
 			builder.queryParam("code", authorizationCode)
 					.queryParam("grant_type", "authorization_code");
+			entity = new HttpEntity<>(headers);
+		} else if(grantType == GrantType.REFRESH_TOKEN) {
+			builder = UriComponentsBuilder.fromHttpUrl(host + "/oauth2/refresh");
+			builder.queryParam("grant_type", "refresh_token");
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+			map.add("refresh_token", refreshToken);
+			entity = new HttpEntity<>(map, headers);
 		} else {
+			builder = UriComponentsBuilder.fromHttpUrl(host + "/oauth2/token");
 			builder.queryParam("client_id", clientId)
 					.queryParam("client_secret", clientSecret)
 					.queryParam("grant_type", "client_credentials");
+			entity = new HttpEntity<>(headers);
 		}
 
 		ResponseEntity<OAuthResponse> response = restTemplate.exchange(
