@@ -17,7 +17,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,11 +25,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OAuthService {
 
-	@Value("${twitch.host.api}")
-	private String twitchHost;
+	@Value("${twitch.host.validation}")
+	private String twitchAuthHost;
 
 	@Value("${twitch.client.id}")
 	private String twitchClientId;
+
+	@Value("${twitch.client.secret}")
+	private String twitchClientSecret;
 
 	@Value("${hue.host}")
 	private String hueHost;
@@ -45,7 +47,6 @@ public class OAuthService {
 	private final RestTemplate restTemplate;
 
 	private final Map<String, OAuthResponse> cache = new HashMap<>();
-	private LocalDateTime lastCallTime;
 
 	/**
 	 * Checks the cache for a valid Twitch OAuth token and if none is found fetches a new Twitch OAuth token
@@ -54,12 +55,12 @@ public class OAuthService {
 	 */
 	public OAuthResponse fetchTwitchAccessToken() {
 		final String key = "TWITCH.<user_id>";
-		if(cache.containsKey(key) && lastCallTime.plusSeconds(cache.get(key).getExpiresIn()).isBefore(LocalDateTime.now())) {
+		if(cache.containsKey(key)) {
 			log.info("Cache hit for Twitch OAuth access_token: {} on key = {}", Util.mask(cache.get(key).getToken(), 6), key);
 			return cache.get(key);
 		}
 
-		return fetchAccessToken(twitchHost, twitchClientId, "null", GrantType.CLIENT_CREDENTIALS, OAuthProvider.TWITCH, null, null);
+		return fetchAccessToken(twitchAuthHost, twitchClientId, twitchClientSecret, GrantType.CLIENT_CREDENTIALS, OAuthProvider.TWITCH, null, null);
 	}
 
 	/**
@@ -69,7 +70,7 @@ public class OAuthService {
 	 */
 	public OAuthResponse fetchHueAccessToken(final String authorizationCode) {
 		final String key = "PHILLIPS_HUE.<user_id>";
-		if(cache.containsKey(key) && lastCallTime.plusSeconds(cache.get(key).getExpiresIn()).isBefore(LocalDateTime.now())) {
+		if(cache.containsKey(key)) {
 			log.info("Cache hit for Phillips Hue OAuth access_token: {} on key = {}", Util.mask(cache.get(key).getToken(), 6), key);
 			return cache.get(key);
 		}
@@ -79,14 +80,13 @@ public class OAuthService {
 
 	public OAuthResponse refreshHueAccessToken(final String refreshToken) {
 		final String key = "PHILLIPS_HUE.<user_id>";
-		if(cache.containsKey(key) && lastCallTime.plusSeconds(cache.get(key).getExpiresIn()).isBefore(LocalDateTime.now())) {
+		if(cache.containsKey(key)) {
 			log.info("Cache hit for Phillips Hue OAuth access_token: {} on key = {}", Util.mask(cache.get(key).getToken(), 6), key);
 			return cache.get(key);
 		}
 
 		return fetchAccessToken(hueHost, hueClientId, hueClientSecret, GrantType.REFRESH_TOKEN, OAuthProvider.PHILLIPS_HUE, null, refreshToken);
 	}
-
 
 	/**
 	 * Method which fetches an OAuth token from an OAuth provider. This method supports both the client credentials and
@@ -104,8 +104,6 @@ public class OAuthService {
 		log.info("Attempting to make POST to {}/oauth2/token to fetch new OAuth 2.0 Token using {} grant type", host, grantType);
 		UriComponentsBuilder builder;
 		HttpHeaders headers = new HttpHeaders();
-		// TODO Might break with twitch authentication idk yet twitch auth doesnt need basic auth header but philips
-		// Yikes also shouldn't put client secret in basic auth.
 		HttpEntity<?> entity;
 		headers.setBasicAuth(clientId, clientSecret);
 		if(grantType == GrantType.AUTHORIZATION_CODE) {
@@ -136,7 +134,6 @@ public class OAuthService {
 
 		if(response.getStatusCode().is2xxSuccessful()) {
 			cache.put(provider.name() + ".<user_id>", response.getBody());
-			lastCallTime = LocalDateTime.now();
 			log.debug("OAuth access_token fetched successfully. Response = {}", response.getBody());
 			return response.getBody();
 		}

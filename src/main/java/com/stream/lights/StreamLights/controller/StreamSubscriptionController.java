@@ -1,6 +1,6 @@
 package com.stream.lights.StreamLights.controller;
 
-import com.stream.lights.StreamLights.model.dynamodb.HueBridge;
+import com.stream.lights.StreamLights.model.dynamodb.HueBridgeCredentials;
 import com.stream.lights.StreamLights.model.http.auth.OAuthResponse;
 import com.stream.lights.StreamLights.model.http.hue.HueLight;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,7 +43,7 @@ public class StreamSubscriptionController {
 	private HueService hueService;
 
 	@NonNull
-	private DynamoDbTable<HueBridge> table;
+	private DynamoDbTable<HueBridgeCredentials> table;
 
 	@NonNull
 	private OAuthService oAuthService;
@@ -76,22 +77,25 @@ public class StreamSubscriptionController {
 
 		log.info("Received new event on webhook endpoint. Event = {}", request);
 		log.info("Finding Hue information for user: {}", request.getEvent().getUsername());
-		HueBridge bridge = table.getItem(Key.builder()
+		HueBridgeCredentials bridge = table.getItem(Key.builder()
 				.partitionValue(request.getEvent().getBroadcasterUsername().toLowerCase())
 				.sortValue("#sort_id")
 				.build());
 
 		log.info("Found bridge information: {}", bridge);
-		OAuthResponse newToken = oAuthService.refreshHueAccessToken(bridge.getRefreshToken());
-		log.info("New OAuth token and refresh token: {}", newToken);
 
-		// Update database with the new refresh token
-		bridge.setRefreshToken(newToken.getRefreshToken());
-		table.updateItem(bridge);
-
-		List<HueLight> lights = hueService.getLights(bridge.getHueApiKey(), newToken.getToken());
-		for(HueLight light : lights) {
-			hueService.on(light.getLightId(), bridge.getHueApiKey(), newToken.getToken());
+		try {
+			List<HueLight> lights = hueService.getLights(bridge);
+			for (HueLight light : lights) {
+				hueService.on(light.getLightId(), bridge);
+			}
+		} catch(AccessDeniedException e) {
+			log.warn("OAuth token is expired. Attempting to fetch new token.");
+			OAuthResponse newToken = oAuthService.refreshHueAccessToken(bridge.getRefreshToken());
+			bridge.setAccessToken(newToken.getToken());
+			bridge.setRefreshToken(newToken.getRefreshToken());
+			table.updateItem(bridge);
+			return ResponseEntity.of(Optional.of("oauth token expired. Token has been refreshed. Retry operation."));
 		}
 
 		return ResponseEntity.of(Optional.of("success"));

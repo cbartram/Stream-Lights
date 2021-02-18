@@ -4,7 +4,7 @@ package com.stream.lights.StreamLights.service.hue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.stream.lights.StreamLights.model.dynamodb.HueBridge;
+import com.stream.lights.StreamLights.model.dynamodb.HueBridgeCredentials;
 import com.stream.lights.StreamLights.model.http.auth.OAuthResponse;
 import com.stream.lights.StreamLights.model.http.hue.HueLight;
 import com.stream.lights.StreamLights.model.http.hue.HueLinkResponse;
@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.file.AccessDeniedException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -65,9 +66,10 @@ public class HueService {
 	 * which can be used to modify or query lights on a remote Hue bridge.
 	 * @param authorizationCode String The OAuth authorization code from the users approving access for stream-lights
 	 *                          to gather their personal information on the hue bridge.
-	 * @return String the Api key used in subsequent requests to the bridge.
+	 * @return HueBridgeCredentials Object containing credentials like access token and refresh token to make subsequent calls
+	 * to the Hue bridge to modify lights.
 	 */
-	public HueBridge linkBridge(final String authorizationCode) {
+	public HueBridgeCredentials linkBridge(final String authorizationCode) {
 		OAuthResponse oauthToken = this.oauthService.fetchHueAccessToken(authorizationCode);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -89,8 +91,9 @@ public class HueService {
 			if(createApiKeyResponse.getStatusCode().is2xxSuccessful()) {
 				try {
 					List<HueLinkResponse> createdKeys = mapper.readValue(createApiKeyResponse.getBody(), new TypeReference<>() {});
-					HueBridge bridge = new HueBridge();
+					HueBridgeCredentials bridge = new HueBridgeCredentials();
 					bridge.setRefreshToken(oauthToken.getRefreshToken());
+					bridge.setAccessToken(oauthToken.getToken());
 					bridge.setHueApiKey(createdKeys.get(0).getApiKey());
 					return bridge;
 				} catch (JsonProcessingException e) {
@@ -108,15 +111,16 @@ public class HueService {
 	/**
 	 * Returns a list of Light objects representing all the Philips hue lights found on the network.
 	 * Each light object can be individually controlled.
+	 * @param credentials HueBridgeCredentials Object which contains creds like the API key and OAuth access token used to interact with a remote Hue bridge.
 	 * @return List of Light objects.
 	 */
-	public List<HueLight> getLights(final String apiKey, final String accessToken) {
-		final String getLightsEndpoint = this.lightsUrl.replace("{api_key}", apiKey);
+	public List<HueLight> getLights(final HueBridgeCredentials credentials) throws AccessDeniedException {
+		final String getLightsEndpoint = this.lightsUrl.replace("{api_key}", credentials.getHueApiKey());
 		log.info("Attempting to make GET to {}{} to find Hue lights on the network.", this.hueHost, getLightsEndpoint);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(accessToken);
+		headers.setBearerAuth(credentials.getAccessToken());
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
 		ResponseEntity<String> response = this.restTemplate.exchange(this.hueHost + getLightsEndpoint, HttpMethod.GET, entity, String.class);
@@ -136,6 +140,9 @@ public class HueService {
 				log.error("Failed to map Hue discovery response json to Java List.class JSON = {}", response.getBody(), e);
 				return Collections.emptyList();
 			}
+		} else if(response.getStatusCode().is4xxClientError()) {
+			log.error("OAuth access token provided is either expired or invalid.");
+			throw new AccessDeniedException("The OAuth access token provided is either expired or invalid.");
 		}
 
 		log.error("Failed to fetch list of lights on the network. Status code = {} and response = {}", response.getStatusCode(), response.getBody());
@@ -145,41 +152,41 @@ public class HueService {
 	/**
 	 * Turns the specified light on.
 	 * @param lightId String light id of the light to change the state for
-	 * @param apiKey String the API key to authenticate with the correct Hue remote bridge
+	 * @param credentials HueBridgeCredentials Object API and access tokens to authenticate with the correct Hue remote bridge
 	 */
-	public void on(final String lightId, final String apiKey, final String accessToken) {
-		putState(lightId, apiKey, "{ \"on\": true }", accessToken);
+	public void on(final String lightId, final HueBridgeCredentials credentials) {
+		putState(lightId, credentials, "{ \"on\": true }");
 	}
 
 	/**
 	 * Turns the specified light off.
 	 * @param lightId String light id of the light to change the state for
-	 * @param apiKey String the API key to authenticate with the correct Hue remote bridge
+	 * @param credentials HueBridgeCredentials Object API and access tokens to authenticate with the correct Hue remote bridge
 	 */
-	public void off(final String lightId, final String apiKey, final String accessToken) {
-		this.putState(lightId, apiKey, "{ \"on\": false }", accessToken);
+	public void off(final String lightId, final HueBridgeCredentials credentials) {
+		this.putState(lightId, credentials, "{ \"on\": false }");
 	}
 
 	/**
 	 * Updates the current state of a light to turn it on, off, or change its color.
 	 * @param lightId String light id of the light to change the state for
-	 * @param apiKey String the API key to authenticate with the correct Hue remote bridge
+	 * @param credentials HueBridgeCredentials Object API and access tokens to authenticate with the correct Hue remote bridge
 	 * @param state String the new JSON state to PUT for the light.
 	 */
-	private void putState(final String lightId, final String apiKey, final String state, final String accessToken) {
+	private void putState(final String lightId, final HueBridgeCredentials credentials, final String state) {
 		final String lightStateEndpoint = this.lightsStateUrl
-				.replace("{api_key}", apiKey)
+				.replace("{api_key}", credentials.getHueApiKey())
 				.replace("{light_id}", lightId);
 
 		log.info("Attempting to make PUT to {} to change light to state ON", this.hueHost + lightStateEndpoint);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setBearerAuth(accessToken);
+		headers.setBearerAuth(credentials.getAccessToken());
 		HttpEntity<String> entity = new HttpEntity<>(state, headers);
 		ResponseEntity<String> response = this.restTemplate.exchange(this.hueHost + lightStateEndpoint, HttpMethod.PUT, entity, String.class);
 		log.debug("Hue lights put state status code = {} and body = {}", response.getStatusCode(), response.getBody());
 
 		if(!response.getStatusCode().is2xxSuccessful())
-		log.error("Something went wrong while trying to update light state information for light: {} using Api key = {}. Status Code = {} response = {}", lightId, apiKey, response.getStatusCode(), response.getBody());
+		log.error("Something went wrong while trying to update light state information for light: {} using Api key = {}. Status Code = {} response = {}", lightId, credentials.getHueApiKey(), response.getStatusCode(), response.getBody());
 	}
 }

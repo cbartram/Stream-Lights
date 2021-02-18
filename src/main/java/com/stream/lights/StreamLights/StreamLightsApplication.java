@@ -1,6 +1,6 @@
 package com.stream.lights.StreamLights;
 
-import com.stream.lights.StreamLights.model.dynamodb.HueBridge;
+import com.stream.lights.StreamLights.model.dynamodb.HueBridgeCredentials;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -54,8 +54,8 @@ public class StreamLightsApplication {
 
 	@Bean
 	@DependsOn("createDynamoDbClient")
-	public DynamoDbTable<HueBridge> createHueBridgeTable(@Autowired final DynamoDbEnhancedClient client) {
-		return client.table(tableName, TableSchema.fromBean(HueBridge.class));
+	public DynamoDbTable<HueBridgeCredentials> createHueBridgeTable(@Autowired final DynamoDbEnhancedClient client) {
+		return client.table(tableName, TableSchema.fromBean(HueBridgeCredentials.class));
 	}
 
 	/**

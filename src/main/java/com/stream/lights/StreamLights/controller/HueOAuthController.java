@@ -1,12 +1,13 @@
 package com.stream.lights.StreamLights.controller;
 
 
-import com.stream.lights.StreamLights.model.dynamodb.HueBridge;
+import com.stream.lights.StreamLights.model.dynamodb.HueBridgeCredentials;
 import com.stream.lights.StreamLights.service.hue.HueService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,21 +30,19 @@ public class HueOAuthController {
 	private HueService hueService;
 
 	@NonNull
-	private DynamoDbTable<HueBridge> table;
+	private DynamoDbTable<HueBridgeCredentials> table;
 
 	@GetMapping("/oauth2/callback")
-	private String oauthCallback(@RequestParam final String code, @RequestParam(required = false) final String state) {
+	private ResponseEntity<HueBridgeCredentials> oauthCallback(@RequestParam final String code, @RequestParam(required = false) final String state) {
 		log.info("Received authorization code: {} for user: {}", code, state);
-
 		// Presses the virtual "link button" on users hue bridge and
 		// creates a new user on their bridge
-		final HueBridge bridge = hueService.linkBridge(code);
+		final HueBridgeCredentials bridge = hueService.linkBridge(code);
 		bridge.setPartitionKey(state);
-		bridge.setSortId("#sort_id"); // TODO not sure what to put here
+		bridge.setSortId("#sort_id");
 		log.info("Successfully Created Link: {} for the remote Hue bridge.", bridge);
-
 		table.putItem(bridge);
-		return "{ \"success\": true }";
+		return ResponseEntity.ok(bridge);
 	}
 
 

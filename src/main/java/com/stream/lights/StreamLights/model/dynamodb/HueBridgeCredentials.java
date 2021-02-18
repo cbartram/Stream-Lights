@@ -7,11 +7,12 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 
 @Data
 @DynamoDbBean
-public class HueBridge {
+public class HueBridgeCredentials {
 
 	private String partitionKey;
 	private String sortId;
 	private String hueApiKey;
+	private String accessToken;
 	private String refreshToken;
 
 	@DynamoDbPartitionKey
