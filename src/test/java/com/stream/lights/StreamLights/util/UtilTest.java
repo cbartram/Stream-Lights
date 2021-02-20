@@ -14,4 +14,23 @@ class UtilTest {
 		log.info(s);
 		assertEquals(10, s.length());
 	}
+
+
+	@Test
+	void util_mask_createsAMakedPassword() {
+		String s = "iamasupersecretpassword";
+		assertEquals("iamas******************", Util.mask(s, 5));
+	}
+
+	@Test
+	void util_mask_returnsAllMaskedForShortRevealedChars() {
+		String s = "iamasupersecretpassword";
+		assertEquals("***********************", Util.mask(s, -1));
+	}
+
+	@Test
+	void util_mask_returnsAllMaskedForLongRevealedChars() {
+		String s = "iamasupersecretpassword";
+		assertEquals("***********************", Util.mask(s, 2000));
+	}
 }
