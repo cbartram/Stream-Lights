@@ -1,5 +1,6 @@
 package com.stream.lights.StreamLights;
 
+import com.stream.lights.StreamLights.model.dynamodb.HueBridgeCredentials;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchEvent;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
@@ -80,6 +81,16 @@ public class TestUtils {
 		request.setVersion("version");
 
 		return request;
+	}
+
+	public static HueBridgeCredentials initHueCredentials() {
+		final HueBridgeCredentials credentials = new HueBridgeCredentials();
+		credentials.setRefreshToken("refresh");
+		credentials.setAccessToken("access");
+		credentials.setPartitionKey("partition");
+		credentials.setSortId("sort");
+		credentials.setHueApiKey("api");
+		return credentials;
 	}
 
 	public static TwitchEvent initTwitchEvent() {

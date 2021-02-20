@@ -1,7 +1,10 @@
 package com.stream.lights.StreamLights.controller;
 
 import com.stream.lights.StreamLights.TestUtils;
+import com.stream.lights.StreamLights.model.dynamodb.HueBridgeCredentials;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
+import com.stream.lights.StreamLights.service.auth.OAuthService;
+import com.stream.lights.StreamLights.service.hue.HueService;
 import com.stream.lights.StreamLights.service.twitch.TwitchService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -11,6 +14,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +29,15 @@ class StreamSubscriptionControllerTest {
 
 	@Mock
 	private TwitchService twitchService;
+
+	@Mock
+	private HueService hueService;
+
+	@Mock
+	private DynamoDbTable<HueBridgeCredentials> table;
+
+	@Mock
+	private OAuthService oAuthService;
 
 	@Test
 	void streamSubscriptionController_createSubscription_success() {
