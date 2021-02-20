@@ -88,7 +88,7 @@ public class TestUtils {
 		credentials.setRefreshToken("refresh");
 		credentials.setAccessToken("access");
 		credentials.setPartitionKey("partition");
-		credentials.setSortId("sort");
+		credentials.setSortId("#sort_id");
 		credentials.setHueApiKey("api");
 		return credentials;
 	}
