@@ -1,6 +1,7 @@
 package com.stream.lights.StreamLights;
 
 import com.stream.lights.StreamLights.model.dynamodb.HueBridgeCredentials;
+import com.stream.lights.StreamLights.model.http.auth.OAuthResponse;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchEvent;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchSubRequest.SubscriptionCondition;
@@ -9,6 +10,7 @@ import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest;
 import com.stream.lights.StreamLights.model.http.twitch.TwitchWebhookRequest.WebhookSubscription;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 
 public class TestUtils {
 
@@ -91,6 +93,16 @@ public class TestUtils {
 		credentials.setSortId("#sort_id");
 		credentials.setHueApiKey("api");
 		return credentials;
+	}
+
+	public static OAuthResponse initOAuthResponse() {
+		final OAuthResponse response = new OAuthResponse();
+		response.setAccessToken("access_token");
+		response.setRefreshToken("refresh_token");
+		response.setExpiresIn(100L);
+		response.setScope(Collections.singletonList("read"));
+		response.setTokenType("bearer");
+		return response;
 	}
 
 	public static TwitchEvent initTwitchEvent() {

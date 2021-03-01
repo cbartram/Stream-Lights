@@ -1,5 +1,11 @@
 package com.stream.lights.StreamLights.util;
 
+import com.google.common.base.Charsets;
+
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Random;
 
 /**
@@ -26,6 +32,34 @@ public class Util {
 	}
 
 	/**
+	 * Creates a base64 encoded version of the username and password to be sent through HTTP headers
+	 * in the Authorization header.
+	 * @param username String username The username in the credentials
+	 * @param password String password the password in the credentials
+	 * @return String the fully base64 encoded string ready to be passed through the authorization header (including)
+	 * the "Basic " part of the header.
+	 */
+	public static String toBasicAuth(String username, String password) {
+		if(username == null) {
+			username = "username";
+		}
+
+		if(password == null) {
+			password = "password";
+		}
+
+		Charset charset = StandardCharsets.ISO_8859_1;
+		CharsetEncoder encoder = charset.newEncoder();
+		if (encoder.canEncode(username) && encoder.canEncode(password)) {
+			String credentialsString = username + ":" + password;
+			byte[] encodedBytes = Base64.getEncoder().encode(credentialsString.getBytes(charset));
+			return "Basic " + new String(encodedBytes, charset);
+		} else {
+			throw new IllegalArgumentException("Username or password contains characters that cannot be encoded to " + charset.displayName());
+		}
+	}
+
+		/**
 	 * Masks a sensitive value in the logs with asterisks.
 	 * @param string String the value to mask
 	 * @param numCharsRevealed int The number of characters to reveal in the string.

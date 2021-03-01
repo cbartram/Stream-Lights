@@ -44,7 +44,7 @@ public class OAuthService {
 	private String hueClientSecret;
 
 	@NonNull
-	private final RestTemplate restTemplate;
+	private RestTemplate restTemplate;
 
 	private final Map<String, OAuthResponse> cache = new HashMap<>();
 
@@ -100,12 +100,18 @@ public class OAuthService {
 	 *                          be null in a client credentials grant type scenario.
 	 * @return OAuthResponse Object which contains meta-data about an OAuth token as well as the access_token itself.
 	 */
-	private OAuthResponse fetchAccessToken(final String host, final String clientId, String clientSecret, final GrantType grantType, final OAuthProvider provider, String authorizationCode, String refreshToken) {
+	public OAuthResponse fetchAccessToken(String host, final String clientId, final String clientSecret, final GrantType grantType, final OAuthProvider provider, String authorizationCode, String refreshToken) {
 		log.info("Attempting to make POST to {}/oauth2/token to fetch new OAuth 2.0 Token using {} grant type", host, grantType);
 		UriComponentsBuilder builder;
 		HttpHeaders headers = new HttpHeaders();
 		HttpEntity<?> entity;
-		headers.setBasicAuth(clientId, clientSecret);
+		headers.set("Authorization", Util.toBasicAuth(clientId, clientSecret));
+
+		// Allows for unit tests with null values TODO this is temporary need to find a better solution
+		if(host == null) {
+			host = "http://testhost";
+		}
+
 		if(grantType == GrantType.AUTHORIZATION_CODE) {
 			builder = UriComponentsBuilder.fromHttpUrl(host + "/oauth2/token");
 			builder.queryParam("code", authorizationCode)
@@ -126,6 +132,7 @@ public class OAuthService {
 			entity = new HttpEntity<>(headers);
 		}
 
+		log.info(builder.toUriString());
 		ResponseEntity<OAuthResponse> response = restTemplate.exchange(
 				builder.toUriString(),
 				HttpMethod.POST,
